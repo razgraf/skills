@@ -1,18 +1,25 @@
 # Price history and comparison sources
 
-Verified November 2026. Sites change. If a pattern below stops working, say so in the report rather than guessing a new endpoint.
+Verified November 2026. Sites change. If a pattern below stops working, skip that source rather than guessing a new endpoint.
 
 ## Access rules (apply to every source)
 
 - **robots.txt**: never request a path the site disallows for `User-agent: *` or for AI agents. The disallowed paths that matter are listed per source below. If you need a path that isn't covered here, read the site's `/robots.txt` first.
-- **Blocked pages**: a plain fetch that's blocked may be tried once in the browser. A challenge page ("Just a moment…", captcha, "verify you are human") or a connection error in the browser means the source is unavailable for this run. Don't wait it out, solve it, change headers or retry. Note it in the report.
+- **Blocked pages**: a plain fetch that's blocked may be tried once in the browser. A challenge page ("Just a moment…", captcha, "verify you are human") or a connection error in the browser means the source is unavailable for this run. Don't wait it out, solve it, change headers or retry.
 - **Outbound links** (`/out/`, `/link/`, `Jump.php`, "spre magazin"): show them to the user as links, but never fetch them.
 - **Pace**: at most one request per source per few seconds, and only the pages this product needs.
 - **Web searches**: use the search tool's domain filter when it has one (Claude's WebSearch: `allowed_domains: ["<host>"]`). Some tools ignore `site:` written in the query and return unrelated pages. Accept only results on the expected host and URL pattern.
 
 ## 1. istoric-preturi.info (first choice)
 
-Covers 500+ stores, gives per-store history and has a lookup that accepts a retailer URL. It's the only history source that works reliably; the others are extras.
+Covers 500+ stores, gives per-store history and has a lookup that accepts a retailer URL. It's the main history source and the only source for Altex, PC Garage, Flanco and most small stores.
+
+**Keep requests low.** Its browser check has started appearing after a few requests in a row, so per run send at most the lookup plus 2 pages, at least 5 seconds apart:
+1. The lookup `POST` (plain curl, don't follow the redirect).
+2. The product page. With a browser, open it there only and read the offers, the JSON-LD and the chart from that one page. Without one, a plain fetch.
+3. At most one more page: the multi-store page from "Similare", read the same way.
+
+Skip variant pages and anything else. If any step is blocked, a plain fetch gets one browser try; a challenge in the browser ends istoric-preturi for the run. Carry on with the other sources (see "No history" in `report.md`).
 
 | What | How |
 |---|---|
@@ -24,7 +31,7 @@ Covers 500+ stores, gives per-store history and has a lookup that accepts a reta
 | Single-store pages | The lookup can land on a page tracking only the store you came from (one row in "De vanzare pe", a code like `J4ZDA_MG6J4ZDA`). Look in the "Similare" block for an entry with the same mpn or the same title, and use that page too. It's usually the multi-store one. Other stores can have their own entries there as well (e.g. `EVOMAG-4247198`); match them by title |
 | Variants | "Variante" block lists sibling variants (storage/color) with their own prices |
 | Staleness text | "A trecut cam mult timp de la ultima verificare" (appears after a few days) and "A trecut destul de mult timp…" (months). Informational only; staleness is decided by the check date (see `report.md`) |
-| Other cell values | `?` in the 30/90-day columns means "Pretul nu a mai putut fi verificat" (no data, don't use it). "SITE NERECOMANDAT" next to a store is istoric-preturi's own warning; keep the row and show `⚠️ not recommended by istoric-preturi` |
+| Other cell values | `?` in the 30/90-day columns means "Pretul nu a mai putut fi verificat" (no data, don't use it). "SITE NERECOMANDAT" next to a store is istoric-preturi's own warning; keep the row and write `(flagged by istoric-preturi)` after the store name |
 | History chart | Chart.js on `#pricesChart`, one dataset per store. Labels like `23 Oct 2025` use Romanian month abbreviations, values are strings, `null` where nothing changed. The data is obfuscated in the HTML, so it needs a browser (see `browser.md`). Points mark price changes, not daily prices |
 | Disallowed | `/search`, `/brands_search`, `/out/`, `/link/` |
 
@@ -32,7 +39,7 @@ No browser: use the 30-day and 90-day "de la X RON" values as history samples (s
 
 ## 2. compari.ro (largest RO comparator, rarely reachable)
 
-In headless agent-browser it showed a Cloudflare challenge on every page (November 2026). Try it once per run when a browser is available; if the title is a challenge, mark it ❌ and move on.
+Skipped by default: it showed a Cloudflare challenge on every page, in plain fetches and in headless agent-browser (November 2026). Check it only when the user names it as an extra site, with one browser try. If the title is a challenge, move on.
 
 | What | How |
 |---|---|

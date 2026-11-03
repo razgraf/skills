@@ -17,20 +17,20 @@ A plain fetch **worked** when it returns a page with a parseable Product JSON-LD
 
 ## Per-retailer table
 
-| Retailer | Host | Product URL → ID | Plain fetch | Search allowed by robots.txt |
-|---|---|---|---|---|
-| eMAG | `emag.ro` | `/pd/([A-Z0-9]+)` → PNK (also JSON-LD `sku`) | ✅ | ✅ `https://www.emag.ro/search/<q>` |
-| Altex | `altex.ro` | `/cpd/([A-Z0-9]+)` → SKU (= mpn without `/`, e.g. `MG6J4ZDA`) | ❌ HTTP/2 error, also in headless browsers | ❌ `/cauta/` disallowed |
-| PC Garage | `pcgarage.ro` | no ID in URL (`/<category>/<brand>/<slug>/`); JSON-LD `sku` (numeric), `mpn` | ❌ Cloudflare, also in headless browsers | not used |
-| Flanco | `flanco.ro` | `/<slug>.html`; ID from JSON-LD | ❌ Cloudflare, also in headless browsers | not used |
-| CEL | `cel.ro` | `/<slug>-p<code>-l/` | ✅ | ✅ `https://www.cel.ro/cauta/<q>/` |
-| evoMAG | `evomag.ro` | ID from JSON-LD | ✅ | ❌ `?sn.q=` disallowed |
-| Vexio, Carrefour, Elefant, others | varies | read JSON-LD | try plain, else browser once | not used |
-| amazon.de | `amazon.de` | `/dp/([A-Z0-9]{10})` or `/gp/product/([A-Z0-9]{10})` → ASIN | **never fetch** | **never fetch** |
+| Retailer                          | Host          | Product URL → ID                                                             | Plain fetch                                             | Search allowed by robots.txt        |
+| --------------------------------- | ------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------- |
+| eMAG                              | `emag.ro`     | `/pd/([A-Z0-9]+)` → PNK (also JSON-LD `sku`)                                 | ✅                                                      | ✅ `https://www.emag.ro/search/<q>` |
+| Altex                             | `altex.ro`    | `/cpd/([A-Z0-9]+)` → SKU (= mpn without `/`, e.g. `MG6J4ZDA`)                | ❌ HTTP/2 error, also in headless browsers. Not fetched | ❌ `/cauta/` disallowed             |
+| PC Garage                         | `pcgarage.ro` | no ID in URL (`/<category>/<brand>/<slug>/`); JSON-LD `sku` (numeric), `mpn` | ❌ Cloudflare, also in headless browsers. Not fetched   | not used                            |
+| Flanco                            | `flanco.ro`   | `/<slug>.html`; ID from JSON-LD                                              | ❌ Cloudflare, also in headless browsers. Not fetched   | not used                            |
+| CEL                               | `cel.ro`      | `/<slug>-p<code>-l/`                                                         | ✅                                                      | ✅ `https://www.cel.ro/cauta/<q>/`  |
+| evoMAG                            | `evomag.ro`   | ID from JSON-LD                                                              | ✅                                                      | ❌ `?sn.q=` disallowed              |
+| Vexio, Carrefour, Elefant, others | varies        | read JSON-LD                                                                 | try plain, else browser once                            | not used                            |
+| amazon.de                         | `amazon.de`   | `/dp/([A-Z0-9]{10})` or `/gp/product/([A-Z0-9]{10})` → ASIN                  | **never fetch**                                         | **never fetch**                     |
 
 "Not used" means the skill doesn't use that store's own search. Find its product page with a domain-restricted web search instead, then open only that page.
 
-For ❌ stores, skip the plain fetch; it can't work and Altex can hang until the timeout. With a browser, try the product page once. Either way, their prices usually come from istoric-preturi. Smaller stores that only appear in aggregator listings (ITArena, Flax, Ozone…) aren't fetched directly; the aggregator's price and check date are enough.
+Don't fetch ❌ stores at all, plain or in the browser: every try so far failed, and Altex can hang until the timeout. Their prices come from istoric-preturi. The one exception is a store the user names as an extra site: then try its product page once in the browser. Smaller stores that only appear in aggregator listings (ITArena, Flax, Ozone…) aren't fetched directly; the aggregator's price and check date are enough.
 
 When you link a store page you couldn't read yourself, the price shown comes from the aggregator. Say so with the aggregator as the source.
 
@@ -38,22 +38,23 @@ When you link a store page you couldn't read yourself, the price shown comes fro
 
 From the object whose `@type` is (or includes) `Product`. It may sit inside `@graph` or an array.
 
-| Field | Use |
-|---|---|
-| `name` | display name |
-| `brand.name` | matching |
-| `mpn` | **primary match key** (e.g. `MG6J4ZD/A`) |
-| `gtin`, `gtin8`, `gtin12`, `gtin13` | secondary match key (EAN/UPC). eMAG has none |
-| `sku` | store-internal ID, not portable across stores |
-| `offers.price` / `offers.lowPrice` | current price (RON) |
-| `offers.availability` | `InStock` / `OutOfStock` / `PreOrder` |
-| `offers.itemCondition` | drop `UsedCondition`, `RefurbishedCondition`, `DamagedCondition`. **Missing counts as new** (eMAG omits it) |
+| Field                               | Use                                                                                                         |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `name`                              | display name                                                                                                |
+| `brand.name`                        | matching                                                                                                    |
+| `mpn`                               | **primary match key** (e.g. `MG6J4ZD/A`)                                                                    |
+| `gtin`, `gtin8`, `gtin12`, `gtin13` | secondary match key (EAN/UPC). eMAG has none                                                                |
+| `sku`                               | store-internal ID, not portable across stores                                                               |
+| `offers.price` / `offers.lowPrice`  | current price (RON)                                                                                         |
+| `offers.availability`               | `InStock` / `OutOfStock` / `PreOrder`                                                                       |
+| `offers.itemCondition`              | drop `UsedCondition`, `RefurbishedCondition`, `DamagedCondition`. **Missing counts as new** (eMAG omits it) |
 
 **Comparing codes.** Stores format the same mpn differently: `MG6J4ZD/A` (eMAG, PC Garage), `MG6J4ZDA` (Altex `sku`), `mg6j4zda` (CEL). Normalize before comparing: lowercase, then remove `/`, `-`, `.`, `_` and spaces. istoric-preturi sometimes prefixes a store code (`J4ZDA_MG6J4ZDA`) or uses a store ID instead (`EVOMAG-4247198`). Compare the part after `_`, or fall back to title matching.
 
 **eMAG marketplace.** The page's inline script has `EM.multiple_offers_count` and `EM.multiple_min_price`, the cheapest other seller on eMAG. That minimum may be a resigilat or used unit, so check the page's offer list (`EM.multiple_offers`) for that seller's offer first:
+
 - Confirmed new and cheaper than eMAG's own price: show it as its own row, "eMAG marketplace (<seller>, check seller rating)". It may count as best now.
-- Condition unconfirmed: leave it out of the table and best now. Mention it in Sources as "eMAG marketplace: N other offers from X RON, condition not verified".
+- Condition unconfirmed: leave it out of the table and best now.
 - Not cheaper than eMAG's own price: leave it out.
 
 Ignore `EM.used_offers`.

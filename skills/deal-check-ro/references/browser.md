@@ -12,7 +12,7 @@ Other browser tools (an in-app browser or Chrome extension the agent already has
 agent-browser --version
 ```
 
-If not, skip the browser-only steps, finish the report with the data you have, and add the install hint from `report.md`.
+If not, show the install suggestion from SKILL.md step 1, skip the browser-only steps and finish the report with the data you have.
 
 **2. Start the session.** Every command in this file uses `--session deal-check-ro`. A session without `--profile` starts from an empty, throwaway profile, so the user's cookies, logins and history are never touched. Never pass `--profile`, and never use `--cdp` to attach to the user's own running browser.
 
@@ -63,8 +63,8 @@ If no browser is found, tell the user they can run `agent-browser install` once 
   agent-browser --session deal-check-ro get url
   ```
 
-  If the title is "Just a moment…" or asks you to verify you're human, or the URL starts with `chrome-error://` (connection failed), stop using that source for this run. Don't wait it out, click through or solve it. Mark it ❌ in Sources.
-- In practice a headless agent-browser gets a challenge or connection error on compari.ro, PC Garage and Flanco, and an HTTP/2 error on Altex (tested November 2026). Try each one once per run, then use istoric-preturi's prices for those stores.
+  If the title is "Just a moment…" or asks you to verify you're human, or the URL starts with `chrome-error://` (connection failed), stop using that source for this run. Don't wait it out, click through or solve it.
+- In practice a headless agent-browser gets a challenge or connection error on compari.ro, PC Garage and Flanco, and an HTTP/2 error on Altex (tested November 2026). The skill doesn't open them, and uses istoric-preturi's prices for those stores. The only exception is a site the user names as an extra site: one try.
 - Accept no cookie banners beyond what's needed to read the page. Prefer "Refuz"/"Reject" when it blocks content.
 - Close the session at the end: `agent-browser --session deal-check-ro close`.
 
@@ -122,7 +122,7 @@ Per-site steps before running it:
 
 | Site | Steps | What you get |
 |---|---|---|
-| istoric-preturi.info | `open` product page, check title, `wait --load networkidle` | `#pricesChart`, one series per store (label = store name). Dates like `02 Noi 2026` use Romanian month abbreviations: Ian Feb Mar Apr Mai Iun Iul Aug Sep Oct Noi Dec |
+| istoric-preturi.info | `open` product page, check title, `wait --load networkidle`. Read the offers with `get text body` and the JSON-LD with the script above from this same page; don't fetch it again with curl | `#pricesChart`, one series per store (label = store name). Dates like `02 Noi 2026` use Romanian month abbreviations: Ian Feb Mar Apr Mai Iun Iul Aug Sep Oct Noi Dec |
 | compari.ro | `open` product page, check title (usually a challenge in headless mode), `wait --load networkidle` | `#chartnormal`, series `preţ minim` and `preţ mediu`, ISO dates |
 | pricy.ro | `open` product page, then click the "Istoric preț" tab: `agent-browser --session deal-check-ro find first 'a[href="#price-history"]' click`, `wait 3000`. For the full range also click "Tot": `agent-browser --session deal-check-ro find text "Tot" click --exact`, `wait 2000` | `#priceHistoryCanvas`, series `Cel mai mic preț` and `Preț mediu`, ISO dates. Default range is 1 year |
 
