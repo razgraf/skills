@@ -1,0 +1,11 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Shopping (RO)",
+      "description": "Price checks and deal hunting for Romanian online stores.",
+      "skills": ["deal-check-ro"]
+    }
+  ]
+}

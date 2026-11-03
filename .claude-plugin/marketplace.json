@@ -1,0 +1,19 @@
+{
+  "name": "razgraf-skills",
+  "owner": {
+    "name": "razgraf"
+  },
+  "metadata": {
+    "description": "Agent skills by razgraf",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "deal-check-ro",
+      "description": "Price history, historical lows and current store offers for products sold by Romanian retailers (eMAG, Altex, PC Garage and others).",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/deal-check-ro"]
+    }
+  ]
+}
